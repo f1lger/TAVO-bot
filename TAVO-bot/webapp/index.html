@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ми</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#170f24;--card:#251737;--card2:#31204a;--tx:#fbeee6;--mute:#b9a6c9;--rose:#ff6f91;--peach:#ffb48a;--ok:#8be0a8}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(120% 60% at 50% -10%,#4a2150 0%,var(--bg) 60%) fixed;color:var(--tx);font:500 15px/1.45 Manrope,system-ui,sans-serif;padding:16px 16px calc(92px + env(safe-area-inset-bottom));min-height:100vh}
+h1,.num{font-family:Fraunces,Georgia,serif}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border-radius:24px;padding:18px;margin-bottom:12px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.mute{color:var(--mute);font-size:13px}
+.hero{text-align:center;padding:26px 16px 22px;border-radius:40px 40px 24px 24px;background:linear-gradient(160deg,#3a1f52,#251737)}
+.ring{position:relative;width:230px;height:230px;margin:10px auto 14px}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.num{font-size:76px;font-weight:800;line-height:1;background:linear-gradient(180deg,var(--peach),var(--rose));-webkit-background-clip:text;color:transparent}
+.names{font-family:Fraunces,serif;font-size:22px;font-weight:600}
+.tile{background:var(--card2);border-radius:18px 18px 18px 6px;padding:14px}
+.tile b{display:block;font:800 26px Fraunces,serif;color:var(--peach)}
+.task{display:flex;gap:12px;align-items:center}
+.chk{width:34px;height:34px;border-radius:12px;border:2px solid var(--mute);background:none;color:#170f24;font-size:18px;flex:none}
+.chk.on{background:var(--ok);border-color:var(--ok)}
+button.p{background:linear-gradient(135deg,var(--peach),var(--rose));color:#2a0f26;border:0;border-radius:16px;padding:13px 16px;font:700 15px Manrope;width:100%}
+button.g{background:var(--card2);color:var(--tx);border:0;border-radius:14px;padding:11px 14px;font:600 14px Manrope}
+input{width:100%;background:var(--bg);border:1.5px solid var(--card2);color:var(--tx);border-radius:14px;padding:12px 14px;font:500 15px Manrope;margin-bottom:8px}
+input:focus{outline:2px solid var(--rose);border-color:transparent}
+nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));background:#2c1b42ee;backdrop-filter:blur(14px);border-radius:26px;display:flex;padding:6px}
+nav button{flex:1;background:none;border:0;color:var(--mute);padding:9px 0;border-radius:20px;font:600 12px Manrope}
+nav button span{display:block;font-size:20px}
+nav button.on{background:var(--card2);color:var(--tx)}
+.stage{aspect-ratio:16/9;background:#000;border-radius:20px;overflow:hidden;margin-bottom:10px;display:flex;align-items:center;justify-content:center;color:var(--mute)}
+.stage video,.stage iframe{width:100%;height:100%;border:0}
+.seg{display:flex;background:var(--card);border-radius:16px;padding:4px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;color:var(--mute);padding:9px;border-radius:12px;font:700 14px Manrope}
+.seg .on{background:var(--card2);color:var(--tx)}
+.wish{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--card2)}
+.wish:last-child{border:0}.wish div{flex:1;min-width:0}.wish a{color:var(--peach);font-size:13px}
+.fly{position:fixed;bottom:110px;font-size:34px;animation:up 1.6s ease-out forwards;pointer-events:none}
+@keyframes up{to{transform:translateY(-220px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.fly{animation:none;opacity:0}}
+</style></head><body>
+<div id="app"></div>
+<nav><button data-t="home" class="on"><span>💞</span>Ми</button><button data-t="cine"><span>🎬</span>Кіно</button><button data-t="wish"><span>🎁</span>Бажання</button><button data-t="more"><span>⚙️</span>Ще</button></nav>
+<script>
+const tg=Telegram.WebApp;tg.ready();tg.expand();tg.setHeaderColor('#170f24');tg.setBackgroundColor('#170f24');
+let S=null,tab='home',wtab='mine';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(a,d={}){const r=await fetch('/api/'+a,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init:tg.initData,...d})});S=await r.json();render()}
+function ymd(a,b){let y=b.getFullYear()-a.getFullYear(),m=b.getMonth()-a.getMonth(),d=b.getDate()-a.getDate();
+ if(d<0){m--;d+=new Date(b.getFullYear(),b.getMonth(),0).getDate()}if(m<0){y--;m+=12}return[y,m,d]}
+const pl=(n,w)=>n+' '+w[(n%10==1&&n%100!=11)?0:(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20))?1:2];
+function home(){
+ if(!S.partner)return `<div class="card hero"><h1 style="font-size:30px">Додай свою половинку</h1><p class="mute" style="margin:8px 0 18px">Надішли посилання — і ви станете парою</p>
+ <button class="p" onclick="tg.openTelegramLink('https://t.me/share/url?url='+encodeURIComponent(S.invite)+'&text='+encodeURIComponent('Приєднуйся до мене 💞'))">Запросити партнера</button></div>
+ <div class="card"><p class="mute" style="margin-bottom:8px">Або введи код запрошення партнера</p><input id="code" placeholder="Код"><button class="g" style="width:100%" onclick="api('join',{code:$('#code').value})">Приєднатися</button></div>`;
+ const st=new Date(S.start+'T00:00'),now=new Date(),days=Math.floor((new Date(now.toDateString())-st)/864e5)+1,[y,m,d]=ymd(st,now);
+ const nx=Math.ceil(days/100)*100,prog=1-(nx-days)/100,R=104,C=2*Math.PI*R;
+ const ann=new Date(now.getFullYear(),st.getMonth(),st.getDate());if(ann<new Date(now.toDateString()))ann.setFullYear(now.getFullYear()+1);
+ const toAnn=Math.round((ann-new Date(now.toDateString()))/864e5);
+ return `<div class="card hero"><div class="names">${esc(S.me.name)} ❤ ${esc(S.partner.name)}</div>
+ <div class="ring"><svg viewBox="0 0 230 230"><circle cx="115" cy="115" r="${R}" fill="none" stroke="#3a2754" stroke-width="12"/>
+ <circle cx="115" cy="115" r="${R}" fill="none" stroke="url(#g)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-prog)}"/>
+ <defs><linearGradient id="g"><stop stop-color="#ffb48a"/><stop offset="1" stop-color="#ff6f91"/></linearGradient></defs></svg>
+ <div class="c"><div class="num">${days}</div><div class="mute">${pl(days,['день','дні','днів']).split(' ')[1]} разом</div></div></div>
+ <div>${y?pl(y,['рік','роки','років'])+' · ':''}${pl(m,['місяць','місяці','місяців'])} · ${pl(d,['день','дні','днів'])}</div></div>
+ <div class="row" style="margin-bottom:12px"><div class="tile">До ${nx} днів<b>${nx-days}</b></div><div class="tile">До річниці<b>${toAnn||'🎉'}</b></div></div>
+ <div class="card"><div class="mute" style="margin-bottom:8px">Завдання дня</div><p style="margin-bottom:14px;font-weight:700">${esc(S.task)}</p>
+ <div class="row"><div class="task"><button class="chk ${S.done.me?'on':''}" onclick="api('done')">${S.done.me?'✓':''}</button><span>Я</span></div>
+ <div class="task"><button class="chk ${S.done.partner?'on':''}" disabled>${S.done.partner?'✓':''}</button><span>${esc(S.partner.name)}</span></div></div></div>`}
+function cine(){if(!S.partner)return `<div class="card">Спочатку додай партнера на вкладці «Ми».</div>`;
+ return `<div class="stage" id="stage">Встав посилання на YouTube або відео (.mp4)</div>
+ <div class="card"><input id="url" placeholder="https://youtu.be/… або https://…/film.mp4"><button class="p" onclick="loadVid($('#url').value,true)">Дивитись разом</button>
+ <div class="row" style="margin-top:10px">${['❤️','😂','😮','👏'].map(e=>`<button class="g" onclick="react('${e}')">${e}</button>`).join('')}</div></div>`}
+function wish(){if(!S.partner)return `<div class="card">Спочатку додай партнера.</div>`;
+ const list=wtab=='mine'?S.mine:S.theirs;
+ return `<div class="seg"><button class="${wtab=='mine'?'on':''}" onclick="wtab='mine';render()">Мої</button><button class="${wtab=='theirs'?'on':''}" onclick="wtab='theirs';render()">${esc(S.partner.name)}</button></div>
+ ${wtab=='mine'?`<div class="card"><input id="wt" placeholder="Що хочеш отримати?"><input id="wl" placeholder="Посилання (необов'язково)"><button class="p" onclick="api('wish_add',{title:$('#wt').value,link:$('#wl').value})">Додати у вішліст</button></div>`:''}
+ <div class="card">${list.length?list.map(w=>`<div class="wish"><div><b>${esc(w.title)}</b>${w.link?`<br><a href="${esc(w.link)}" target="_blank">відкрити посилання</a>`:''}</div>
+ ${wtab=='mine'?`<button class="g" onclick="api('wish_del',{id:${w.id}})">✕</button>`:(w.reserved&&!w.byMe?'<span class="mute">заброньовано</span>':`<button class="g" onclick="api('reserve',{id:${w.id}})">${w.byMe?'Скасувати':'Подарую'}</button>`)}</div>`).join(''):'<p class="mute">Поки порожньо</p>'}</div>
+ ${wtab=='mine'?'<p class="mute">Ти не бачиш, що партнер забронював — сюрприз збережено 🤫</p>':''}`}
+function more(){const w=location.origin+'/widget?t='+S.token;
+ return `<div class="card"><div class="mute" style="margin-bottom:8px">Дата початку стосунків</div>${S.partner?`<input type="date" id="sd" value="${S.start}" max="${S.today}"><button class="g" style="width:100%" onclick="api('start',{date:$('#sd').value})">Зберегти дату</button>`:'<p class="mute">З\'явиться після додавання партнера</p>'}</div>
+ <div class="card"><div class="mute" style="margin-bottom:8px">Віджет на головний екран</div>
+ <button class="p" onclick="tg.addToHomeScreen?tg.addToHomeScreen():tg.showAlert('Онови Telegram, щоб додати ярлик')">Додати ярлик на екран</button>
+ <p class="mute" style="margin-top:10px">Для справжнього віджета (Scriptable / KWGT) використай це посилання з даними:</p><input readonly value="${w}" onclick="this.select()"></div>
+ ${S.partner?`<button class="g" style="width:100%" onclick="tg.showConfirm('Розірвати пару?',ok=>ok&&api('unpair'))">Роз'єднати пару</button>`:''}`}
+function render(){const el=$('#app');if(tab=='cine'&&$('#stage')&&ctl)return;el.innerHTML={home,cine,wish,more}[tab]();
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab))}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;ctl=null;render();tab=='cine'&&cur&&loadVid(cur,false)});
+
+/* ---- спільний перегляд ---- */
+let ws,ctl=null,lock=false,cur='',lastT=0,pend=null;
+function send(o){ws&&ws.readyState==1&&ws.send(JSON.stringify(o))}
+function hold(){lock=true;setTimeout(()=>lock=false,800)}
+function connect(){ws=new WebSocket(location.origin.replace('http','ws')+'/ws');ws.onopen=()=>ws.send(JSON.stringify({init:tg.initData}));
+ ws.onclose=()=>setTimeout(connect,2000);
+ ws.onmessage=e=>{const d=JSON.parse(e.data);
+  if(d.type=='load'){cur=d.url;pend={t:d.t||0,playing:!!d.playing};tab='cine';render();loadVid(d.url,false)}
+  else if(d.type=='react')fly(d.e);
+  else if(ctl){hold();const diff=Math.abs(ctl.time()-d.t);
+   if(d.type=='play'){diff>1&&ctl.seek(d.t);ctl.play()}else if(d.type=='pause'){ctl.pause();ctl.seek(d.t)}else if(d.type=='seek')ctl.seek(d.t);lastT=d.t}}}
+function ytId(u){const m=u.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);return m&&m[1]}
+function loadVid(u,share){u=u.trim();if(!u)return;cur=u;if(share)send({type:'load',url:u});const st=$('#stage');if(!st)return;
+ const id=ytId(u),apply=()=>{if(pend){hold();ctl.seek(pend.t);pend.playing&&ctl.play();pend=null}};
+ if(id){st.innerHTML='<div id="yt"></div>';const mk=()=>{const p=new YT.Player('yt',{videoId:id,playerVars:{playsinline:1},events:{
+   onReady:()=>{ctl={play:()=>p.playVideo(),pause:()=>p.pauseVideo(),seek:t=>p.seekTo(t,true),time:()=>p.getCurrentTime()};apply()},
+   onStateChange:e=>{if(lock)return;if(e.data==1)send({type:'play',t:p.getCurrentTime()});if(e.data==2)send({type:'pause',t:p.getCurrentTime()})}}})};
+  if(window.YT&&YT.Player)mk();else{window.onYouTubeIframeAPIReady=mk;const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';document.head.appendChild(s)}}
+ else{st.innerHTML=`<video controls playsinline src="${esc(u)}"></video>`;const v=st.firstChild;
+  ctl={play:()=>v.play(),pause:()=>v.pause(),seek:t=>v.currentTime=t,time:()=>v.currentTime};
+  v.onloadedmetadata=apply;v.onplay=()=>!lock&&send({type:'play',t:v.currentTime});v.onpause=()=>!lock&&send({type:'pause',t:v.currentTime});v.onseeked=()=>!lock&&send({type:'seek',t:v.currentTime})}}
+setInterval(()=>{if(!ctl||lock)return;try{const t=ctl.time();if(Math.abs(t-lastT)>2.5)send({type:'seek',t});lastT=t}catch(e){}},1000);
+function react(e){send({type:'react',e});fly(e)}
+function fly(e){const n=document.createElement('div');n.className='fly';n.textContent=e;n.style.left=20+Math.random()*60+'%';document.body.appendChild(n);setTimeout(()=>n.remove(),1700)}
+api('me').then(connect);
+</script></body></html>
