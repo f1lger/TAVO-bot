@@ -44,7 +44,7 @@ nav button.on{background:var(--card2);color:var(--tx)}
 @media(prefers-reduced-motion:reduce){.fly{animation:none;opacity:0}}
 </style></head><body>
 <div id="app"></div>
-<nav><button data-t="home" class="on"><span>💞</span>Ми</button><button data-t="cine"><span>🎬</span>Кіно</button><button data-t="wish"><span>🎁</span>Бажання</button><button data-t="more"><span>⚙️</span>Ще</button></nav>
+<nav><button data-t="home" class="on"><span>💞</span>Ми</button><button data-t="cine"><span>🎬</span>Кіно</button><button data-t="wish"><span>🎁</span>Бажання</button><button data-t="ev"><span>📅</span>Події</button><button data-t="more"><span>⚙️</span>Ще</button></nav>
 <script>
 const tg=Telegram.WebApp;tg.ready();tg.expand();tg.setHeaderColor('#170f24');tg.setBackgroundColor('#170f24');
 let S=null,tab='home',wtab='mine';
@@ -71,7 +71,22 @@ function home(){
  <div class="row" style="margin-bottom:12px"><div class="tile">До ${nx} днів<b>${nx-days}</b></div><div class="tile">До річниці<b>${toAnn||'🎉'}</b></div></div>
  <div class="card"><div class="mute" style="margin-bottom:8px">Завдання дня</div><p style="margin-bottom:14px;font-weight:700">${esc(S.task)}</p>
  <div class="row"><div class="task"><button class="chk ${S.done.me?'on':''}" onclick="api('done')">${S.done.me?'✓':''}</button><span>Я</span></div>
- <div class="task"><button class="chk ${S.done.partner?'on':''}" disabled>${S.done.partner?'✓':''}</button><span>${esc(S.partner.name)}</span></div></div></div>`}
+ <div class="task"><button class="chk ${S.done.partner?'on':''}" disabled>${S.done.partner?'✓':''}</button><span>${esc(S.partner.name)}</span></div></div></div>${extra()}`}
+function extra(){const M=['😍','😊','😌','😴','😢','😤'],a=S.ans;
+ const mm=(m,n)=>`<div class="tile">${m?`<div style="font-size:30px">${m.e}</div>`:''}<span class="mute">${esc(n)}${m?'':': ще не обрав(-ла)'}</span></div>`;
+ return `<div class="card"><div class="mute" style="margin-bottom:8px">Настрій сьогодні</div>
+ <div class="row" style="margin-bottom:10px">${M.map(e=>`<button class="g" style="padding:8px;font-size:22px;${S.mood.me&&S.mood.me.e==e?'outline:2px solid var(--rose)':''}" onclick="api('mood',{emoji:'${e}'})">${e}</button>`).join('')}</div>
+ <div class="row">${mm(S.mood.me,'Я')}${mm(S.mood.partner,S.partner.name)}</div></div>
+ <div class="card"><div class="mute" style="margin-bottom:6px">Питання дня</div><p style="font-weight:700;margin-bottom:10px">${esc(S.question)}</p>
+ ${a.me?`<div class="tile" style="margin-bottom:8px"><span class="mute">Ти:</span> ${esc(a.me)}</div>${a.partner?`<div class="tile"><span class="mute">${esc(S.partner.name)}:</span> ${esc(a.partner)}</div>`:'<p class="mute">Відповідь партнера з\'явиться, щойно він(-а) відповість</p>'}`:`<input id="ans" placeholder="Твоя відповідь"><button class="p" onclick="api('answer',{text:$('#ans').value})">Відповісти</button>`}</div>
+ <div class="card"><div class="mute" style="margin-bottom:8px">Записка партнеру в Telegram</div><input id="nd" placeholder="Напиши щось ніжне (або лиши порожнім)"><button class="p" onclick="api('nudge',{text:$('#nd').value});tg.HapticFeedback.notificationOccurred('success')">Надіслати 💌</button></div>`}
+function evs(){if(!S.partner)return `<div class="card">Спочатку додай партнера.</div>`;
+ const t0=new Date(S.today+'T00:00'),L=S.events.map(e=>({...e,n:Math.round((new Date(e.date+'T00:00')-t0)/864e5)}));
+ const fut=L.filter(e=>e.n>=0).sort((a,b)=>a.n-b.n),past=L.filter(e=>e.n<0).sort((a,b)=>b.n-a.n);
+ const it=e=>`<div class="wish"><div><b>${esc(e.title)}</b><br><span class="mute">${e.date}</span></div><b class="num" style="color:var(--peach)">${e.n>0?'через '+e.n+' дн.':e.n==0?'сьогодні 🎉':-e.n+' дн. тому'}</b><button class="g" onclick="api('ev_del',{id:${e.id}})">✕</button></div>`;
+ return `<div class="card"><input id="et" placeholder="Подія чи спогад (поїздка, перший поцілунок…)"><input id="ed" type="date"><button class="p" onclick="api('ev_add',{title:$('#et').value,date:$('#ed').value})">Додати</button></div>
+ <div class="card"><div class="mute">Попереду</div>${fut.map(it).join('')||'<p class="mute">Подій немає</p>'}</div>
+ <div class="card"><div class="mute">Наші спогади</div>${past.map(it).join('')||'<p class="mute">Порожньо</p>'}</div>`}
 function cine(){if(!S.partner)return `<div class="card">Спочатку додай партнера на вкладці «Ми».</div>`;
  return `<div class="stage" id="stage">Встав посилання на YouTube або відео (.mp4)</div>
  <div class="card"><input id="url" placeholder="https://youtu.be/… або https://…/film.mp4"><button class="p" onclick="loadVid($('#url').value,true)">Дивитись разом</button>
@@ -89,7 +104,7 @@ function more(){const w=location.origin+'/widget?t='+S.token;
  <button class="p" onclick="tg.addToHomeScreen?tg.addToHomeScreen():tg.showAlert('Онови Telegram, щоб додати ярлик')">Додати ярлик на екран</button>
  <p class="mute" style="margin-top:10px">Для справжнього віджета (Scriptable / KWGT) використай це посилання з даними:</p><input readonly value="${w}" onclick="this.select()"></div>
  ${S.partner?`<button class="g" style="width:100%" onclick="tg.showConfirm('Розірвати пару?',ok=>ok&&api('unpair'))">Роз'єднати пару</button>`:''}`}
-function render(){const el=$('#app');if(tab=='cine'&&$('#stage')&&ctl)return;el.innerHTML={home,cine,wish,more}[tab]();
+function render(){const el=$('#app');if(tab=='cine'&&$('#stage')&&ctl)return;el.innerHTML={home,cine,wish,ev:evs,more}[tab]();
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab))}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;ctl=null;render();tab=='cine'&&cur&&loadVid(cur,false)});
 
