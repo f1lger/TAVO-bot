@@ -19,6 +19,9 @@ create table if not exists users(id integer primary key, name text, couple integ
 create table if not exists couples(id integer primary key autoincrement, a integer, b integer, start text);
 create table if not exists done(couple integer, day text, user integer, primary key(couple,day,user));
 create table if not exists wishes(id integer primary key autoincrement, owner integer, title text, link text, reserved_by integer);
+create table if not exists moods(user integer, day text, emoji text, note text, primary key(user,day));
+create table if not exists events(id integer primary key autoincrement, couple integer, title text, date text);
+create table if not exists answers(couple integer, day text, user integer, text text, primary key(couple,day,user));
 """)
 
 def q(sql, *a): return db.execute(sql, a).fetchall()
@@ -46,6 +49,21 @@ TASKS = [
  "Станцюйте під вашу пісню на кухні",
  "Запитай: «Чим я можу допомогти тобі сьогодні?»",
  "Згадай смішний момент з вашого життя і розсмішіть одне одного",
+]
+QUESTIONS = [
+ "Який момент із нашого життя ти б хотів/ла пережити ще раз?",
+ "Що я роблю, від чого тобі стає спокійніше?",
+ "Яка наша спільна мрія, до якої ми ще не дійшли?",
+ "Яка моя звичка тобі найбільше подобається?",
+ "Що ти запам'ятав/ла з нашої першої зустрічі?",
+ "Як виглядає твій ідеальний вихідний з нами?",
+ "За що ти найбільше вдячний/вдячна нашим стосункам?",
+ "Яке місце світу ти хотів/ла б показати мені?",
+ "Яка пісня нагадує тобі про нас?",
+ "Що б ти хотів/ла, щоб ми робили частіше?",
+ "Коли ти востаннє відчував/ла, що я тебе підтримав/ла?",
+ "Яким ти уявляєш наше життя через п'ять років?",
+ "Яка дрібниця від мене зробила твій день кращим?",
 ]
 def task_for(d): return TASKS[d.toordinal() % len(TASKS)]
 def today(): return dt.date.today()
@@ -82,6 +100,13 @@ def state(uid):
         s["start"] = c["start"]
         dn = {r["user"] for r in q("select user from done where couple=? and day=?", c["id"], today().isoformat())}
         s["done"] = {"me": uid in dn, "partner": pid in dn}
+        td = today().isoformat()
+        mo = {r["user"]: {"e": r["emoji"], "n": r["note"]} for r in q("select * from moods where day=? and user in (?,?)", td, uid, pid)}
+        s["mood"] = {"me": mo.get(uid), "partner": mo.get(pid)}
+        s["events"] = [dict(r) for r in q("select id,title,date from events where couple=?", c["id"])]
+        s["question"] = QUESTIONS[today().toordinal() % len(QUESTIONS)]
+        an = {r["user"]: r["text"] for r in q("select user,text from answers where couple=? and day=?", c["id"], td)}
+        s["ans"] = {"me": an.get(uid), "partner": an.get(pid) if uid in an and pid in an else None}
         s["mine"] = [dict(r) for r in q("select id,title,link from wishes where owner=?", uid)]
         s["theirs"] = [{"id": r["id"], "title": r["title"], "link": r["link"], "reserved": r["reserved_by"] is not None,
                         "byMe": r["reserved_by"] == uid}
@@ -116,6 +141,17 @@ async def api(r):
         w = q("select reserved_by from wishes where id=? and owner=?", b["id"], pid)
         if w and w[0]["reserved_by"] in (None, uid):
             ex("update wishes set reserved_by=? where id=?", None if w[0]["reserved_by"] else uid, b["id"])
+    elif a == "mood" and cid:
+        ex("insert or replace into moods values(?,?,?,?)", uid, today().isoformat(), b["emoji"][:8], b.get("note", "")[:80])
+    elif a == "nudge" and pid:
+        t = b.get("text", "").strip()[:300]
+        await bot.send_message(pid, f"💌 {me['name']}: {t}" if t else f"🫶 {me['name']} сумує за тобою", reply_markup=open_kb())
+    elif a == "ev_add" and cid and b.get("title", "").strip() and b.get("date"):
+        ex("insert into events(couple,title,date) values(?,?,?)", cid, b["title"][:80], dt.date.fromisoformat(b["date"]).isoformat())
+    elif a == "ev_del" and cid:
+        ex("delete from events where id=? and couple=?", b["id"], cid)
+    elif a == "answer" and cid and b.get("text", "").strip():
+        ex("insert or replace into answers values(?,?,?,?)", cid, today().isoformat(), uid, b["text"][:500])
     elif a == "unpair" and cid:
         db.execute("update users set couple=null where couple=?", (cid,)); db.commit()
     return web.json_response(state(uid))
